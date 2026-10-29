@@ -1,0 +1,22 @@
+{
+  "benchmark": "AgentForge repeated-action comparison",
+  "generated_at_utc": "2026-10-22T10:43:37.296878+00:00",
+  "iterations": 100,
+  "replays_per_action": 5,
+  "scope": "SQLite-backed local simulation; one successful action followed by identical replays.",
+  "not_a_claim": "Not a latency/performance benchmark, not a fault-injection benchmark, and not a competitor comparison. The fair measured outcome is handler invocation count only.",
+  "baseline_naive_reexecution": {
+    "logical_actions": 100,
+    "side_effect_handler_invocations": 500
+  },
+  "agentforge_action_ledger": {
+    "logical_actions": 100,
+    "side_effect_handler_invocations": 100
+  },
+  "handler_invocations_avoided": 400,
+  "handler_invocation_reduction_fraction": 0.8,
+  "assertions": {
+    "baseline_invocations_equal_five_per_action": true,
+    "ledger_invocations_equal_one_per_action": true
+  }
+}

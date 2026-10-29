@@ -1,0 +1,49 @@
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db
+
+# Local audit scripts, temporary archives, backups, and transcripts
+AgentForge_Batch*.ps1
+AgentForge_Mega_Orchestrator*.ps1
+AgentForge_OneShot_*.ps1
+AgentForge_Finalization_Batch.zip
+AgentForge_*.zip
+backups/
+reports/*
+!reports/agentforge_reliability_benchmark.json
+!reports/agentforge_execution_comparison.json
+AgentForge_Batch2_Preflight_*.txt
+
+# Additional release safety exclusions
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.bak
+*.pem
+*.key
+secrets/
+credentials/
