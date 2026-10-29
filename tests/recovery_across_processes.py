@@ -37,10 +37,10 @@ def main() -> int:
     password = os.environ["AGENTFORGE_DB_PASSWORD"]
 
     connection_string = conninfo.make_conninfo(
-        host="127.0.0.1",
-        port=5432,
-        dbname="agentforge",
-        user="agentforge",
+        host=os.environ.get("AGENTFORGE_DB_HOST", "127.0.0.1"),
+        port=int(os.environ.get("AGENTFORGE_DB_PORT", "5432")),
+        dbname=os.environ.get("AGENTFORGE_DB_NAME", "agentforge"),
+        user=os.environ.get("AGENTFORGE_DB_USER", "agentforge"),
         password=password,
     )
     config = {"configurable": {"thread_id": thread_id}}

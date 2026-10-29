@@ -57,10 +57,10 @@ def test_transient_tool_failure_recovers_with_postgres_checkpoint():
     graph.add_edge("inspect_service", END)
 
     connection_string = make_conninfo(
-        host="127.0.0.1",
-        port=5432,
-        dbname="agentforge",
-        user="agentforge",
+        host=os.environ.get("AGENTFORGE_DB_HOST", "127.0.0.1"),
+        port=int(os.environ.get("AGENTFORGE_DB_PORT", "5432")),
+        dbname=os.environ.get("AGENTFORGE_DB_NAME", "agentforge"),
+        user=os.environ.get("AGENTFORGE_DB_USER", "agentforge"),
         password=os.environ["AGENTFORGE_DB_PASSWORD"],
     )
     config = {

@@ -19,11 +19,11 @@ def postgres_engine():
 
     database_url = URL.create(
         drivername="postgresql+psycopg",
-        username="agentforge",
+        username=os.environ.get("AGENTFORGE_DB_USER", "agentforge"),
         password=password,
-        host="127.0.0.1",
-        port=5432,
-        database="agentforge",
+        host=os.environ.get("AGENTFORGE_DB_HOST", "127.0.0.1"),
+        port=int(os.environ.get("AGENTFORGE_DB_PORT", "5432")),
+        database=os.environ.get("AGENTFORGE_DB_NAME", "agentforge"),
     )
 
     engine = create_engine(
