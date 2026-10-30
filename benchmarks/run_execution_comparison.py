@@ -226,20 +226,40 @@ def _ambiguous_scenario() -> dict:
     baseline_effects = 0
     baseline_successes = 0
 
-    def baseline_handler(request: dict) -> dict:
+    consumed_schedule = []
+
+    def consume_event(expected: str) -> None:
+        if len(consumed_schedule) >= len(schedule):
+            raise AssertionError(f"unexpected extra event: {expected}")
+        actual = schedule[len(consumed_schedule)]
+        if actual != expected:
+            raise AssertionError(
+                f"expected scripted event {expected!r}, got {actual!r}"
+            )
+        consumed_schedule.append(actual)
+
+    def baseline_handler(request: dict, delivery: int) -> dict:
         nonlocal baseline_calls, baseline_effects
         baseline_calls += 1
+        side_effect_event = (
+            "side_effect_occurs" if delivery == 1
+            else "redelivery_side_effect_occurs"
+        )
+        consume_event(side_effect_event)
         baseline_effects += 1
+        consume_event("response_timeout_reported")
         raise TimeoutError("scripted response timeout after simulated side effect")
 
     baseline_observed = []
-    for _ in range(2):
+    for delivery in (1, 2):
         baseline_attempts += 1
         try:
-            baseline_observed.append(baseline_handler(dict(payload)))
+            baseline_observed.append(baseline_handler(dict(payload), delivery))
             baseline_successes += 1
         except TimeoutError as exc:
             baseline_observed.append(type(exc).__name__)
+
+    assert consumed_schedule == schedule
 
     with TemporaryDirectory(prefix="agentforge-matched-ambiguous-") as tmp:
         engine, runtime = _runtime(tmp, "ambiguous")
