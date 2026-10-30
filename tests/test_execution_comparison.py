@@ -48,6 +48,8 @@ def test_ambiguous_outcome_executes_baseline_twice_but_blocks_agentforge_retry()
     assert scenario["baseline"]["handler_invocations"] == 2
     assert scenario["baseline"]["simulated_side_effects"] == 2
     assert scenario["baseline"]["caller_visible_successes"] == 0
+    assert scenario["assertions"]["baseline_consumed_schedule_in_order"] is True
+    assert scenario["assertions"]["baseline_consumed_all_schedule_events"] is True
     assert scenario["agentforge"]["attempts"] == 2
     assert scenario["agentforge"]["handler_invocations"] == 1
     assert scenario["agentforge"]["simulated_side_effects"] == 1
