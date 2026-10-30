@@ -169,7 +169,7 @@ def _duplicate_scenario() -> dict:
             results.append(runtime.execute(
                 "duplicate-001", "matched_case_review", payload, handler
             ))
-        state = get_action(engine, "duplicate") if False else get_action(engine, "duplicate-001")
+        state = get_action(engine, "duplicate-001")
         engine.dispose()
 
     assert baseline_calls == DUPLICATE_DELIVERIES
@@ -264,18 +264,48 @@ def _ambiguous_scenario() -> dict:
 def run_comparison(iterations: int = 1) -> dict:
     if isinstance(iterations, bool) or not isinstance(iterations, int) or iterations < 1:
         raise ValueError("iterations must be a positive integer")
-    # Iterations repeat the matched scenario suite with unique action keys in the
-    # duplicate/ambiguous cases; scenario outputs aggregate counts across runs.
     scenarios = {
         "normal_execution": _normal_scenario(),
         "recoverable_transient_failure": _transient_scenario(),
         "duplicate_delivery_replay": _duplicate_scenario(),
         "ambiguous_outcome": _ambiguous_scenario(),
     }
+    # Preserve the original repeated-delivery comparison and its --iterations
+    # interface alongside the new matched failure scenarios.
+    baseline_replay_invocations = iterations * DUPLICATE_DELIVERIES
+    with TemporaryDirectory(prefix="agentforge-replay-comparison-") as tmp:
+        engine, runtime = _runtime(tmp, "replay")
+        ledger_replay_invocations = 0
+        for index in range(iterations):
+            key = f"replay-{index:06d}"
+            request = {"case_id": f"CASE-{index:06d}"}
+            for _ in range(DUPLICATE_DELIVERIES):
+                def replay_handler(payload: dict) -> dict:
+                    nonlocal ledger_replay_invocations
+                    ledger_replay_invocations += 1
+                    return {"case_id": payload["case_id"], "decision": "manual_review"}
+                runtime.execute(key, "simulated_case_review", request, replay_handler)
+        engine.dispose()
+    replay_assertions = {
+        "baseline_invocations_match_deliveries": baseline_replay_invocations == iterations * DUPLICATE_DELIVERIES,
+        "ledger_invocations_match_logical_actions": ledger_replay_invocations == iterations,
+    }
+    assert all(replay_assertions.values())
     report = {
         "benchmark": "AgentForge matched reliability evaluation",
         "schema_version": 1,
         "iterations": iterations,
+        "original_replay_comparison": {
+            "logical_actions": iterations,
+            "deliveries_per_action": DUPLICATE_DELIVERIES,
+            "baseline_handler_invocations": baseline_replay_invocations,
+            "agentforge_handler_invocations": ledger_replay_invocations,
+            "handler_invocations_avoided": baseline_replay_invocations - ledger_replay_invocations,
+            "handler_invocation_reduction_fraction": (
+                baseline_replay_invocations - ledger_replay_invocations
+            ) / baseline_replay_invocations,
+            "assertions": replay_assertions,
+        },
         "scope": (
             "Deterministic local simulation. Counts simulated handler invocations, "
             "attempts, outcomes, and ledger states only."
@@ -299,12 +329,12 @@ def run_comparison(iterations: int = 1) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--iterations", type=int, default=1,
-                        help="reserved repeat count; currently each scenario is run once")
+    parser.add_argument("--iterations", type=int, default=100,
+                        help="logical actions for the preserved repeated-replay comparison")
     parser.add_argument("--output", default="reports/agentforge_matched_reliability.json")
     args = parser.parse_args()
-    if args.iterations != 1:
-        parser.error("--iterations currently supports only 1; scenario schedules are deterministic")
+    if not 1 <= args.iterations <= 10000:
+        parser.error("--iterations must be between 1 and 10000")
     report = run_comparison(args.iterations)
     output = (ROOT / args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
