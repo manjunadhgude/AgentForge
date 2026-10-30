@@ -93,3 +93,15 @@ To explicitly run PostgreSQL integration tests after confirming the database tar
 ## Verification claims
 
 Historical reports in `reports/` describe runs from the user's configured Windows environment. They are not proof that the current checkout passes after subsequent edits. Re-run the commands above and inspect the generated output before release. The project should be presented as a reliability-focused engineering prototype, not as production-ready infrastructure.
+
+### Matched reliability evaluation
+
+The execution comparison now includes four deterministic matched scenarios: normal completion, a fail-before-side-effect transient retry, duplicate delivery/replay, and an ambiguous outcome where the side effect occurs before a timeout is reported. Each scenario uses the same logical input. The transient scenario applies the same fail-before-side-effect schedule to both paths; the ambiguous scenario consumes the two side-effect-then-timeout deliveries in its naïve baseline, while AgentForge records uncertainty and blocks the second handler invocation. The benchmark asserts handler invocation counts, simulated side effects, caller-visible outcomes, replay equivalence, and recovery/blocked states, then writes a JSON report to `reports/agentforge_matched_reliability.json`. Pull-request CI also provisions an isolated PostgreSQL service, runs the full test suite, executes this benchmark CLI, and retains the generated report as a workflow artifact.
+
+Run it with:
+
+```powershell
+.\\.venv\\Scripts\\python.exe .\\benchmarks\\run_execution_comparison.py
+```
+
+The baseline is a deliberately simple naive caller, not a named product. The report measures simulated handler invocations and state transitions only; it makes no latency, throughput, production-scale, or competitor-performance claim. An uncertain ledger state prevents blind re-execution but cannot determine whether a remote side effect actually occurred. Exactly-once external effects require downstream idempotency/deduplication and reconciliation; the AgentForge ledger alone does not provide that guarantee.
