@@ -39,3 +39,38 @@
 5. Push only the sanitized source tree and verify the published repository.
 
 A passing local test suite does not establish production readiness, scale performance, or security against every failure. A persistent ledger cannot guarantee exactly-once execution for arbitrary remote side effects without downstream idempotency and reconciliation.
+
+
+## Final Windows completion batch — 2026-10-31
+
+**Checkout:** `main` at `673025b403d3fd8be5aacf0a870ec3571e2e8252` at start and end of the local completion batch.  
+**Result:** 17 checks passed; 0 failed, 0 warnings, 0 blocked, 0 skipped.
+
+| Suite/check | Result |
+|---|---|
+| Full non-PostgreSQL regression | 118 passed, 3 deselected, 4 subtests passed |
+| PostgreSQL integration | 3 passed, 118 deselected |
+| Focused LLM offline tests | 13 passed |
+| Targeted safety and recovery tests | 65 passed |
+| Python 3.12.10 syntax compilation | Passed |
+| Dependency consistency | Passed |
+| Git diff whitespace check | Passed |
+| Lightweight tracked-file secret-pattern scan | Passed; not comprehensive |
+
+Focused LLM and safety/recovery suites overlap the broader test suites; do not sum them as unique tests.
+
+### Live provider smoke test
+
+Groq model `openai/gpt-oss-20b` proposed `get_order_status(order_id="ORDER-001")`. AgentForge validated the proposal through its tool registry and executed the local mock lookup, returning `delivered`. The demo explicitly reported `external_services_called=false`. This proves live model-to-runtime-to-mock-tool behavior, not a real external transaction.
+
+### PostgreSQL target confirmation
+
+The running Docker container `agentforge-postgres` exposed `127.0.0.1:5432 -> 5432/tcp`. Integration tests used host `127.0.0.1`, port `5432`, database `agentforge`, user `agentforge`. Three PostgreSQL integration tests passed.
+
+### Evidence location
+
+Local logs and machine-readable results are retained under `reports/completion-batch-20261031-000247/`, including `FINALIZATION_REPORT.md` and `NOTION_UPDATE_DRAFT.md`.
+
+### Remaining boundaries
+
+The lightweight secret scan is not a complete secret scanner or history audit. The safety source scan is not a formal security audit. No real external order/payment service was called. The benchmark is deterministic simulation, not production latency/throughput or competitor testing. Exactly-once external effects still require downstream idempotency/deduplication and reconciliation. Do not describe the project as production-ready.

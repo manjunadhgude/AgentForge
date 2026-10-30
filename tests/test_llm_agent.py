@@ -42,6 +42,7 @@ def test_llm_proposal_uses_allowlisted_tool_and_validated_arguments():
     proposal = planner.propose("Check the status of ORDER-001")
     assert proposal == ToolProposal("get_order_status", {"order_id": "ORDER-001"}, "test-model")
     assert len(calls) == 1
+    assert calls[0][0].get_header("User-agent") == "AgentForge/1.0 (LLM integration test)"
     payload = json.loads(calls[0][0].data)
     assert payload["parallel_tool_calls"] is False
     assert {item["function"]["name"] for item in payload["tools"]} == {

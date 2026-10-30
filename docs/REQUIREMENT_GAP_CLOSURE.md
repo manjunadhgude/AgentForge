@@ -56,3 +56,13 @@ PR run [41054167435](https://github.com/manjunadhgude/AgentForge/actions/runs/41
 The same job ran `python benchmarks/run_execution_comparison.py`, confirmed `all_invariants_passed: true`, and uploaded [agentforge-matched-reliability-report](https://github.com/manjunadhgude/AgentForge/actions/runs/41054167435/artifacts/12976770005). The downloaded JSON was inspected: 100 logical actions at five deliveries each produced 500 naïve-baseline handler invocations versus 100 ledger-backed invocations; the four matched scenarios passed their assertions. This is a deterministic simulation, not a production performance benchmark.
 
 Still not verified: a live provider-backed LLM request using a user-controlled key, the user's target Windows/Codespaces checkout state, and production deployment/security gates.
+
+## Final local acceptance evidence — 2026-10-31
+
+The Windows completion batch at `673025b403d3fd8be5aacf0a870ec3571e2e8252` reported 17 checks passed with no failed, warning, blocked, or skipped checks. Test log counts: non-PostgreSQL suite **118 passed, 3 deselected, 4 subtests passed**; PostgreSQL suite **3 passed, 118 deselected**; focused LLM tests **13 passed**; targeted safety/recovery tests **65 passed**. The latter two suites overlap the main suites.
+
+The PostgreSQL container was confirmed running with loopback-only port mapping `127.0.0.1:5432 -> 5432/tcp`; tests used defaults for the local `agentforge` database and `agentforge` user.
+
+A live Groq `openai/gpt-oss-20b` smoke test proposed a read-only order-status tool call. AgentForge validated and executed the local mock tool; result `delivered`, with `external_services_called=false`. No external order system was contacted.
+
+The run also passed Python syntax compilation, dependency consistency, Git whitespace check, and a lightweight tracked-file token-pattern scan. This is not a full secret/history scan or security audit. The implementation is a reliability-focused prototype, not production-certified software.
