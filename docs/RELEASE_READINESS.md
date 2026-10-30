@@ -44,6 +44,8 @@ Do not describe the project as production-ready. The live-provider test and fina
 
 ## Matched reliability evaluation (2026-10-30)
 
-- [ ] Run `python benchmarks/run_execution_comparison.py` and retain `reports/agentforge_matched_reliability.json`.
-- [ ] Confirm all four scenario invariants pass: normal completion, matched fail-before-side-effect retry, duplicate replay, and ambiguous-outcome blocking.
-- [ ] Review the report limitations. Do not describe uncertain-state blocking as exactly-once external execution.
+- [x] Run `python benchmarks/run_execution_comparison.py` in GitHub Actions and retain `reports/agentforge_matched_reliability.json` as the `agentforge-matched-reliability-report` artifact.
+- [x] Confirm all four scenario invariants pass: normal completion, matched fail-before-side-effect retry, duplicate replay, and ambiguous-outcome blocking.
+- [x] Review the report limitations. Do not describe uncertain-state blocking as exactly-once external execution.
+
+**Verified CI evidence:** PR run [41054167435](https://github.com/manjunadhgude/AgentForge/actions/runs/41054167435), head `160fe37c775075350541e81c1c3c81020437d5c6`: 121 tests passed and 4 subtests passed in 5.32 seconds, including PostgreSQL integration tests against an ephemeral PostgreSQL 17.4 service. The matched benchmark CLI completed successfully and uploaded the JSON artifact. Local Windows regression and live-provider smoke testing remain separate release gates.
