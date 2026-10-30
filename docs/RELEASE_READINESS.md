@@ -40,3 +40,10 @@ A successful local test suite is necessary but not sufficient for production rel
 - [ ] Create/push the public GitHub repository and verify its published contents.
 
 Do not describe the project as production-ready. The live-provider test and final Windows/PostgreSQL regression run remain outstanding.
+
+
+## Matched reliability evaluation (2026-10-30)
+
+- [ ] Run `python benchmarks/run_execution_comparison.py` and retain `reports/agentforge_matched_reliability.json`.
+- [ ] Confirm all four scenario invariants pass: normal completion, matched fail-before-side-effect retry, duplicate replay, and ambiguous-outcome blocking.
+- [ ] Review the report limitations. Do not describe uncertain-state blocking as exactly-once external execution.
