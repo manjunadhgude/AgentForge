@@ -36,7 +36,7 @@ Set `AGENTFORGE_LLM_API_KEY` and `AGENTFORGE_LLM_MODEL` in your local environmen
 .\.venv\Scripts\python.exe .\demo_llm_tool.py
 ```
 
-This demo may execute the read-only mock order lookup. A refund proposal is displayed but not executed because it requires approval. No real order system or payment processor is connected. A real provider call may incur provider charges. The live-provider path has not been verified in this environment; run it with a valid provider configuration before claiming live integration verified.
+This demo may execute the read-only mock order lookup. A refund proposal is displayed but not executed because it requires approval. No real order system or payment processor is connected. A real provider call may incur provider charges. **Verified local smoke test (2026-10-30):** Groq `openai/gpt-oss-20b` returned a structured `get_order_status(order_id="ORDER-001")` proposal. AgentForge validated the proposal and executed the registered local mock lookup, which returned `delivered`. The demo reported `external_services_called=false`; this verifies live model-to-runtime-to-mock-tool behavior, not a real order-system transaction. The request uses a descriptive `User-Agent` header for provider compatibility.
 
 ## Benchmarks
 

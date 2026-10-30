@@ -144,6 +144,7 @@ class OpenAICompatibleToolPlanner:
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
                 "Accept": "application/json",
+                "User-Agent": "AgentForge/1.0 (LLM integration test)",
             },
             method="POST",
         )
