@@ -96,7 +96,7 @@ Historical reports in `reports/` describe runs from the user's configured Window
 
 ### Matched reliability evaluation
 
-The execution comparison now includes four deterministic matched scenarios: normal completion, a fail-before-side-effect transient retry, duplicate delivery/replay, and an ambiguous outcome where the side effect occurs before a timeout is reported. Each scenario uses the same logical input and scripted schedule for the baseline and AgentForge paths. The benchmark asserts handler invocation counts, attempts, final outcomes, and recovery/blocked states, then writes a JSON report to `reports/agentforge_matched_reliability.json`.
+The execution comparison now includes four deterministic matched scenarios: normal completion, a fail-before-side-effect transient retry, duplicate delivery/replay, and an ambiguous outcome where the side effect occurs before a timeout is reported. Each scenario uses the same logical input. The transient scenario applies the same fail-before-side-effect schedule to both paths; the ambiguous scenario consumes the two side-effect-then-timeout deliveries in its naïve baseline, while AgentForge records uncertainty and blocks the second handler invocation. The benchmark asserts handler invocation counts, simulated side effects, caller-visible outcomes, replay equivalence, and recovery/blocked states, then writes a JSON report to `reports/agentforge_matched_reliability.json`. Pull-request CI also provisions an isolated PostgreSQL service, runs the full test suite, executes this benchmark CLI, and retains the generated report as a workflow artifact.
 
 Run it with:
 
