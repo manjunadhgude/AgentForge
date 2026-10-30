@@ -16,3 +16,11 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements.txt
       - run: python -m pytest -q -m "not postgres"
+      - name: Run matched reliability benchmark
+        run: python benchmarks/run_execution_comparison.py
+      - name: Upload matched reliability report
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentforge-matched-reliability-report
+          path: reports/agentforge_matched_reliability.json
+          if-no-files-found: error
