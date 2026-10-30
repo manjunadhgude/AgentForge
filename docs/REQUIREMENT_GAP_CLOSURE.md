@@ -33,3 +33,17 @@ The LLM is a proposal generator, not an authorization component. All tool names 
 7. Verify the public repository contains only intended source, tests, docs, and sanitized example configuration.
 
 A passing automated test suite does not establish production readiness, scale performance, or security against all failures.
+
+
+## Matched reliability evaluation (2026-10-30)
+
+The existing `benchmarks/run_execution_comparison.py` now exercises four matched deterministic scenarios:
+
+1. Normal execution: baseline and AgentForge complete the same logical action.
+2. Recoverable transient failure: both receive the same fail-before-side-effect schedule and a three-attempt bound.
+3. Duplicate delivery: the naive baseline invokes the handler on each delivery; AgentForge returns the stored completed result.
+4. Ambiguous outcome: the simulated side effect occurs before a timeout is reported. The baseline blindly invokes again; AgentForge records uncertainty and blocks the next execution pending reconciliation.
+
+The benchmark asserts attempts, actual simulated handler invocation counts, final outcomes, and states. It emits `reports/agentforge_matched_reliability.json`. Focused invariants are covered by `tests/test_execution_comparison.py`.
+
+**Interpretation limit:** this is a deterministic local simulation, not a production load/latency benchmark or comparison with another product. Blocking blind replay is not an exactly-once guarantee. A remote side effect may have happened despite a timeout; reliable integrations still need downstream idempotency/deduplication and a reconciliation path.
