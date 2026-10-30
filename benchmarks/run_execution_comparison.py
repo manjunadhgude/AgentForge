@@ -152,29 +152,42 @@ def _transient_scenario() -> dict:
 def _duplicate_scenario() -> dict:
     payload = {"case_id": "CASE-DUPLICATE-001", "decision": "manual_review"}
     baseline_calls = 0
-    for _ in range(DUPLICATE_DELIVERIES):
+    baseline_effects = 0
+    baseline_results = []
+
+    def baseline_handler(request: dict) -> dict:
+        nonlocal baseline_calls, baseline_effects
         baseline_calls += 1
+        baseline_effects += 1
+        return {"case_id": request["case_id"], "decision": request["decision"]}
+
+    for _ in range(DUPLICATE_DELIVERIES):
+        baseline_results.append(baseline_handler(dict(payload)))
 
     with TemporaryDirectory(prefix="agentforge-matched-duplicate-") as tmp:
         engine, runtime = _runtime(tmp, "duplicate")
         agentforge_calls = 0
+        agentforge_effects = 0
         results = []
 
         def handler(request: dict) -> dict:
-            nonlocal agentforge_calls
+            nonlocal agentforge_calls, agentforge_effects
             agentforge_calls += 1
+            agentforge_effects += 1
             return {"case_id": request["case_id"], "decision": request["decision"]}
 
         for _ in range(DUPLICATE_DELIVERIES):
             results.append(runtime.execute(
-                "duplicate-001", "matched_case_review", payload, handler
+                "duplicate-001", "matched_case_review", dict(payload), handler
             ))
         state = get_action(engine, "duplicate-001")
         engine.dispose()
 
+    agentforge_results = [item["result"] for item in results]
     assert baseline_calls == DUPLICATE_DELIVERIES
     assert agentforge_calls == 1
-    assert all(item["result"] == results[0]["result"] for item in results)
+    assert baseline_results == agentforge_results
+    assert all(result == baseline_results[0] for result in baseline_results)
     assert sum(bool(item["replayed"]) for item in results) == DUPLICATE_DELIVERIES - 1
     assert state["status"] == "completed"
     return {
@@ -182,46 +195,71 @@ def _duplicate_scenario() -> dict:
         "failure_schedule": ["same delivery repeated"] * (DUPLICATE_DELIVERIES - 1),
         "deliveries": DUPLICATE_DELIVERIES,
         "baseline": {
-            "attempts": DUPLICATE_DELIVERIES, "handler_invocations": baseline_calls,
+            "attempts": baseline_calls, "handler_invocations": baseline_calls,
+            "simulated_side_effects": baseline_effects,
+            "caller_visible_successes": len(baseline_results),
             "outcome": "completed", "state": "re-executed_on_each_delivery",
         },
         "agentforge": {
             "attempts": DUPLICATE_DELIVERIES, "handler_invocations": agentforge_calls,
+            "simulated_side_effects": agentforge_effects,
+            "caller_visible_successes": len(agentforge_results),
             "outcome": "completed_with_saved_result_replay", "state": state["status"],
         },
         "assertions": {
-            "baseline_reexecutes_each_delivery": True,
-            "agentforge_invokes_once": True,
-            "remaining_deliveries_replayed": True,
+            "baseline_reexecutes_each_delivery": baseline_calls == DUPLICATE_DELIVERIES,
+            "agentforge_invokes_once": agentforge_calls == 1,
+            "per_delivery_results_equivalent": baseline_results == agentforge_results,
+            "remaining_deliveries_replayed": sum(bool(item["replayed"]) for item in results) == DUPLICATE_DELIVERIES - 1,
         },
     }
 
 
 def _ambiguous_scenario() -> dict:
     payload = {"case_id": "CASE-AMBIGUOUS-001", "decision": "submit"}
+    schedule = [
+        "side_effect_occurs", "response_timeout_reported",
+        "redelivery_side_effect_occurs", "response_timeout_reported",
+    ]
     baseline_calls = 0
     baseline_attempts = 0
+    baseline_effects = 0
+    baseline_successes = 0
 
-    # The side effect happens, then the caller observes a timeout and retries.
+    def baseline_handler(request: dict) -> dict:
+        nonlocal baseline_calls, baseline_effects
+        baseline_calls += 1
+        baseline_effects += 1
+        raise TimeoutError("scripted response timeout after simulated side effect")
+
+    baseline_observed = []
     for _ in range(2):
         baseline_attempts += 1
-        baseline_calls += 1
+        try:
+            baseline_observed.append(baseline_handler(dict(payload)))
+            baseline_successes += 1
+        except TimeoutError as exc:
+            baseline_observed.append(type(exc).__name__)
 
     with TemporaryDirectory(prefix="agentforge-matched-ambiguous-") as tmp:
         engine, runtime = _runtime(tmp, "ambiguous")
         agentforge_calls = 0
         agentforge_attempts = 0
+        agentforge_effects = 0
+        agentforge_successes = 0
 
         def side_effect_then_timeout(request: dict) -> dict:
-            nonlocal agentforge_calls
+            nonlocal agentforge_calls, agentforge_effects
             agentforge_calls += 1
+            agentforge_effects += 1
             raise TimeoutError("response timed out after simulated side effect")
 
         try:
             agentforge_attempts += 1
             runtime.execute(
-                "ambiguous-001", "matched_submit", payload, side_effect_then_timeout
+                "ambiguous-001", "matched_submit", dict(payload), side_effect_then_timeout
             )
+            agentforge_successes += 1
         except ActionExecutionFailed:
             pass
         else:
@@ -231,32 +269,41 @@ def _ambiguous_scenario() -> dict:
         try:
             agentforge_attempts += 1
             runtime.execute(
-                "ambiguous-001", "matched_submit", payload, side_effect_then_timeout
+                "ambiguous-001", "matched_submit", dict(payload), side_effect_then_timeout
             )
+            agentforge_successes += 1
         except ActionRecoveryRequired:
             blocked = True
         state = get_action(engine, "ambiguous-001")["status"]
         engine.dispose()
 
-    assert baseline_calls == 2 and baseline_attempts == 2
-    assert agentforge_calls == 1 and agentforge_attempts == 2
+    assert baseline_calls == baseline_attempts == baseline_effects == 2
+    assert baseline_successes == 0
+    assert agentforge_calls == agentforge_effects == 1
+    assert agentforge_attempts == 2 and agentforge_successes == 0
     assert blocked and state == "uncertain"
     return {
         "input": payload,
-        "failure_schedule": ["side_effect_occurs", "response_timeout_reported", "redelivery"],
+        "failure_schedule": schedule,
         "baseline": {
             "attempts": baseline_attempts, "handler_invocations": baseline_calls,
-            "outcome": "blind_retry_after_ambiguous_timeout",
+            "simulated_side_effects": baseline_effects,
+            "caller_visible_successes": baseline_successes,
+            "outcome": "two_timeouts_after_side_effect",
             "state": "re-executed_without_reconciliation",
         },
         "agentforge": {
             "attempts": agentforge_attempts, "handler_invocations": agentforge_calls,
+            "simulated_side_effects": agentforge_effects,
+            "caller_visible_successes": agentforge_successes,
             "outcome": "blocked_pending_reconciliation", "state": state,
         },
         "assertions": {
-            "baseline_reexecutes_after_ambiguous_timeout": True,
+            "baseline_handler_invoked_twice": baseline_calls == 2,
+            "baseline_effects_occurred_twice": baseline_effects == 2,
             "agentforge_blocks_second_execution": blocked,
-            "agentforge_side_effect_invoked_once": agentforge_calls == 1,
+            "agentforge_effect_occurred_once": agentforge_effects == 1,
+            "no_caller_observed_success": baseline_successes == agentforge_successes == 0,
         },
     }
 
