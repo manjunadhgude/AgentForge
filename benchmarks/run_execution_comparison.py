@@ -323,6 +323,8 @@ def _ambiguous_scenario() -> dict:
             "baseline_effects_occurred_twice": baseline_effects == 2,
             "agentforge_blocks_second_execution": blocked,
             "agentforge_effect_occurred_once": agentforge_effects == 1,
+            "baseline_consumed_schedule_in_order": consumed_schedule == schedule,
+            "baseline_consumed_all_schedule_events": len(consumed_schedule) == len(schedule),
             "no_caller_observed_success": baseline_successes == agentforge_successes == 0,
         },
     }
