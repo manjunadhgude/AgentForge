@@ -27,18 +27,30 @@ def test_transient_failure_uses_same_bounded_schedule():
     assert scenario["agentforge"]["handler_invocations"] == 1
 
 
-def test_duplicate_delivery_reuses_saved_result():
+def test_duplicate_delivery_executes_baseline_each_time_and_replays_agentforge_result():
     scenario = run_comparison()["scenarios"]["duplicate_delivery_replay"]
 
+    assert scenario["baseline"]["attempts"] == 5
     assert scenario["baseline"]["handler_invocations"] == 5
+    assert scenario["baseline"]["simulated_side_effects"] == 5
     assert scenario["agentforge"]["handler_invocations"] == 1
+    assert scenario["agentforge"]["simulated_side_effects"] == 1
+    assert scenario["baseline"]["caller_visible_successes"] == 5
+    assert scenario["agentforge"]["caller_visible_successes"] == 5
+    assert scenario["assertions"]["per_delivery_results_equivalent"] is True
     assert scenario["assertions"]["remaining_deliveries_replayed"] is True
 
 
-def test_ambiguous_outcome_blocks_agentforge_blind_reexecution():
+def test_ambiguous_outcome_executes_baseline_twice_but_blocks_agentforge_retry():
     scenario = run_comparison()["scenarios"]["ambiguous_outcome"]
 
+    assert scenario["baseline"]["attempts"] == 2
     assert scenario["baseline"]["handler_invocations"] == 2
+    assert scenario["baseline"]["simulated_side_effects"] == 2
+    assert scenario["baseline"]["caller_visible_successes"] == 0
+    assert scenario["agentforge"]["attempts"] == 2
     assert scenario["agentforge"]["handler_invocations"] == 1
+    assert scenario["agentforge"]["simulated_side_effects"] == 1
+    assert scenario["agentforge"]["caller_visible_successes"] == 0
     assert scenario["agentforge"]["state"] == "uncertain"
     assert scenario["assertions"]["agentforge_blocks_second_execution"] is True
