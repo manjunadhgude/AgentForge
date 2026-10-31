@@ -1,4 +1,5 @@
 import pytest
+from dataclasses import replace
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
@@ -233,3 +234,68 @@ def test_short_tokens_are_rejected_as_insecure(client):
     with TestClient(app) as test_client:
         assert test_client.get("/tools", headers={"Authorization": "Bearer weak"}).status_code == 503
     engine.dispose()
+
+def test_rejected_refund_requests_never_invoke_handler(client):
+    calls = []
+
+    def counting_handler(arguments):
+        calls.append(arguments)
+        return {"simulated": True}
+
+    registry = client.app.state.tools
+    original = registry.get_tool_spec("issue_refund")
+    registry._tools["issue_refund"] = replace(original, handler=counting_handler)
+
+    args = {"order_id": "ORD-900", "amount_cents": 2500}
+    try:
+        response = client.post("/tools/issue_refund/execute", json={"arguments": args})
+        assert response.status_code == 401 and len(calls) == 0
+
+        response = client.post(
+            "/tools/issue_refund/execute",
+            headers=api_headers(),
+            json={"arguments": args},
+        )
+        assert response.status_code == 403 and len(calls) == 0
+
+        response = client.post(
+            "/approvals",
+            headers=api_headers(),
+            json={"tool_name": "issue_refund", "arguments": args},
+        )
+        assert response.status_code == 201
+        approval_id = response.json()["request_id"]
+
+        response = client.post(
+            f"/approvals/{approval_id}/approve", headers=api_headers()
+        )
+        assert response.status_code == 401 and len(calls) == 0
+
+        response = client.post(
+            f"/approvals/{approval_id}/approve", headers=approver_headers()
+        )
+        assert response.status_code == 200
+
+        changed = {"order_id": "ORD-900", "amount_cents": 5000}
+        response = client.post(
+            "/tools/issue_refund/execute",
+            headers=api_headers(),
+            json={"arguments": changed, "approval_id": approval_id},
+        )
+        assert response.status_code == 403 and len(calls) == 0
+
+        response = client.post(
+            "/tools/issue_refund/execute",
+            headers=api_headers(),
+            json={"arguments": args, "approval_id": approval_id},
+        )
+        assert response.status_code == 200 and len(calls) == 1
+
+        response = client.post(
+            "/tools/issue_refund/execute",
+            headers=api_headers(),
+            json={"arguments": args, "approval_id": approval_id},
+        )
+        assert response.status_code == 403 and len(calls) == 1
+    finally:
+        registry._tools["issue_refund"] = original

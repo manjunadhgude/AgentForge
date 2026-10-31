@@ -11,6 +11,15 @@ from sqlalchemy.engine import URL
 from action_ledger import claim_action, initialize_ledger
 
 
+pytestmark = [
+    pytest.mark.postgres,
+    pytest.mark.skipif(
+        not os.environ.get("AGENTFORGE_DB_PASSWORD"),
+        reason="PostgreSQL integration test requires AGENTFORGE_DB_PASSWORD",
+    ),
+]
+
+
 @pytest.fixture
 def postgres_engine():
     password = os.environ.get("AGENTFORGE_DB_PASSWORD")
