@@ -47,3 +47,7 @@ __pycache__/
 *.key
 secrets/
 credentials/
+
+# Retained AgentForge V1 benchmark evidence
+!reports/agentforge_reliability_benchmark_100_iterations.json
+!reports/agentforge_execution_comparison_100_actions.json

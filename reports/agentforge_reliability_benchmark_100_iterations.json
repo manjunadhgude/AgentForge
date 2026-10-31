@@ -1,0 +1,56 @@
+{
+  "benchmark": "AgentForge local retry microbenchmark",
+  "generated_at_utc": "2026-10-30T20:55:41.366877+00:00",
+  "iterations_per_scenario": 100,
+  "note": "Simulated local operations only; not a production or competitor benchmark.",
+  "scenarios": [
+    {
+      "scenario": "success",
+      "iterations": 100,
+      "successes": 100,
+      "failures": 0,
+      "success_rate": 1.0,
+      "total_attempts": 100,
+      "mean_attempts": 1.0,
+      "latency_ms": {
+        "min": 0.009517999387753662,
+        "mean": 0.012378570027067326,
+        "p50": 0.010380000276200008,
+        "p95": 0.01834499926189892,
+        "max": 0.06007200045132777
+      }
+    },
+    {
+      "scenario": "transient_recovery",
+      "iterations": 100,
+      "successes": 100,
+      "failures": 0,
+      "success_rate": 1.0,
+      "total_attempts": 200,
+      "mean_attempts": 2.0,
+      "latency_ms": {
+        "min": 0.01426699964213185,
+        "mean": 0.018155669977204525,
+        "p50": 0.015979999261617195,
+        "p95": 0.02382500042585889,
+        "max": 0.09899399992718827
+      }
+    },
+    {
+      "scenario": "exhausted_retries",
+      "iterations": 100,
+      "successes": 0,
+      "failures": 100,
+      "success_rate": 0.0,
+      "total_attempts": 300,
+      "mean_attempts": 3.0,
+      "latency_ms": {
+        "min": 0.012783999409293756,
+        "mean": 0.016665710008965107,
+        "p50": 0.013535000107367523,
+        "p95": 0.018435000129102264,
+        "max": 0.10092799948324682
+      }
+    }
+  ]
+}
